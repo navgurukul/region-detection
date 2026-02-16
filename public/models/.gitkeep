@@ -1,0 +1,12 @@
+# Place your ONNX model files here
+
+Download YOLOv8n ONNX model:
+```bash
+wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8n.onnx
+```
+
+Or convert your own:
+```bash
+cd ../scripts
+python convert_model.py
+```

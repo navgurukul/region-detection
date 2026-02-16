@@ -1,0 +1,17 @@
+node_modules
+dist
+*.log
+.DS_Store
+.env
+.vscode
+.idea
+
+# Model files (too large for git)
+public/models/*.onnx
+public/models/*.pt
+
+# Training artifacts
+runs/
+datasets/
+*.pt
+*.pth
