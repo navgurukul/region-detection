@@ -1,12 +1,14 @@
 import { ScreenCapture } from './screenCapture';
-import { DetectorClient } from './detectorClient';
+import { SmartLayoutDetector } from './smartLayoutDetector';
+import { OCRProcessor } from './ocrProcessor';
 import { OverlayRenderer } from './overlay';
 import { CONFIG } from './config';
-import type { Settings, Stats } from './types';
+import type { Settings, Stats, Detection } from './types';
 
 class App {
   private screenCapture: ScreenCapture;
-  private detector: DetectorClient;
+  private layoutDetector: SmartLayoutDetector;
+  private ocrProcessor: OCRProcessor;
   private overlay: OverlayRenderer;
   private settings: Settings;
   private stats: Stats;
@@ -15,6 +17,8 @@ class App {
   private lastFrameTime = 0;
   private frameCount = 0;
   private fpsUpdateTime = 0;
+  private processedRegions = new Set<string>(); // Track which regions we've OCR'd
+  private showBounds = true; // Toggle for showing bounds
 
   // DOM elements
   private startBtn: HTMLButtonElement;
@@ -53,7 +57,8 @@ class App {
 
     // Initialize components
     this.screenCapture = new ScreenCapture(this.videoElement);
-    this.detector = new DetectorClient();
+    this.layoutDetector = new SmartLayoutDetector();
+    this.ocrProcessor = new OCRProcessor();
     this.overlay = new OverlayRenderer(this.displayCanvas, this.settings);
 
     this.setupEventListeners();
@@ -64,6 +69,14 @@ class App {
     // Start/Stop buttons
     this.startBtn.addEventListener('click', () => this.start());
     this.stopBtn.addEventListener('click', () => this.stop());
+
+    // Show bounds toggle
+    const showBoundsCheckbox = document.getElementById('showBounds') as HTMLInputElement;
+    if (showBoundsCheckbox) {
+      showBoundsCheckbox.addEventListener('change', (e) => {
+        this.showBounds = (e.target as HTMLInputElement).checked;
+      });
+    }
 
     // Settings
     const showLabelsCheckbox = document.getElementById('showLabels') as HTMLInputElement;
@@ -102,33 +115,14 @@ class App {
   }
 
   private async initializeDetector(): Promise<void> {
-    try {
-      this.loading.style.display = 'block';
-      this.placeholder.style.display = 'none';
-      
-      await this.detector.initialize();
-      
-      this.stats.modelLoaded = true;
-      this.updateStatsUI();
-      
-      this.loading.style.display = 'none';
-      this.placeholder.style.display = 'block';
-      
-      console.log('✓ App initialized successfully');
-    } catch (error) {
-      console.error('Initialization failed:', error);
-      this.loading.style.display = 'none';
-      alert(`Failed to load AI model: ${error}\n\nPlease ensure the model file is in public/models/`);
-    }
+    // Layout detection doesn't need initialization
+    this.stats.modelLoaded = true;
+    this.updateStatsUI();
+    console.log('✓ Layout detector ready');
   }
 
   private async start(): Promise<void> {
     if (this.isRunning) return;
-
-    if (!this.stats.modelLoaded) {
-      alert('AI model is still loading. Please wait...');
-      return;
-    }
 
     try {
       // Start screen capture
@@ -218,34 +212,33 @@ class App {
       // Get image data
       const imageData = tempCtx.getImageData(0, 0, width, height);
 
-      // Run detection
-      const result = await this.detector.detect(
-        imageData,
-        this.settings.confidenceThreshold
-      );
+      // Detect layout regions
+      const regions = this.layoutDetector.detectRegions(imageData);
+      
+      // Convert to detection format
+      const detections: Detection[] = regions.map(region => ({
+        label: region.type,
+        confidence: region.confidence,
+        x: region.x,
+        y: region.y,
+        width: region.width,
+        height: region.height,
+      }));
 
       // Update stats
       this.stats.latency = performance.now() - startTime;
-      this.stats.detectionCount = result.detections.length;
+      this.stats.detectionCount = detections.length;
 
-      // Draw overlay
-      this.overlay.drawDetections(result.detections, this.videoElement);
-
-      // Optional: blur sensitive regions
-      if (CONFIG.BLUR_SENSITIVE) {
-        for (const detection of result.detections) {
-          const isSensitive = CONFIG.SENSITIVE_KEYWORDS.some(
-            keyword => detection.label.toLowerCase().includes(keyword)
-          );
-          if (isSensitive) {
-            this.overlay.blurRegion(
-              detection.x,
-              detection.y,
-              detection.width,
-              detection.height
-            );
-          }
-        }
+      // Draw overlay only if showBounds is enabled
+      if (this.showBounds) {
+        this.overlay.drawDetections(detections, this.videoElement);
+      } else {
+        // Just show the video without boxes
+        this.overlay.clear();
+        const { videoWidth, videoHeight } = this.videoElement;
+        this.overlay.canvas.width = videoWidth;
+        this.overlay.canvas.height = videoHeight;
+        this.overlay.ctx.drawImage(this.videoElement, 0, 0, videoWidth, videoHeight);
       }
 
     } catch (error) {
@@ -263,7 +256,7 @@ class App {
     if (latencyElement) latencyElement.textContent = `${this.stats.latency.toFixed(0)}ms`;
     if (detectionsElement) detectionsElement.textContent = this.stats.detectionCount.toString();
     if (modelElement) {
-      modelElement.textContent = this.stats.modelLoaded ? 'YOLOv8n' : 'Loading...';
+      modelElement.textContent = 'Layout Detection';
     }
   }
 }

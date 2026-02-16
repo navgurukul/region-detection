@@ -2,8 +2,8 @@ import type { Detection, Settings } from './types';
 import { CONFIG } from './config';
 
 export class OverlayRenderer {
-  private canvas: HTMLCanvasElement;
-  private ctx: CanvasRenderingContext2D;
+  public canvas: HTMLCanvasElement;
+  public ctx: CanvasRenderingContext2D;
   private settings: Settings;
 
   constructor(canvas: HTMLCanvasElement, settings: Settings) {
@@ -34,113 +34,113 @@ export class OverlayRenderer {
     // Draw video frame
     this.ctx.drawImage(videoElement, 0, 0, videoWidth, videoHeight);
 
-    // Filter by confidence threshold
-    const filtered = detections.filter(
-      d => d.confidence >= this.settings.confidenceThreshold
-    );
+    console.log(`[Overlay] Drawing ${detections.length} detections`);
 
     // Draw each detection
-    for (const detection of filtered) {
+    for (const detection of detections) {
       this.drawBox(detection);
-      
-      if (this.settings.showLabels) {
-        this.drawLabel(detection);
-      }
+      this.drawLabel(detection);
     }
   }
 
   private drawBox(detection: Detection): void {
-    const { x, y, width, height } = detection;
+    const { x, y, width, height, isCode } = detection;
 
-    // Draw bounding box
-    this.ctx.strokeStyle = CONFIG.BOX_COLOR;
-    this.ctx.lineWidth = CONFIG.BOX_THICKNESS;
+    // Choose color based on content type
+    let boxColor = '#2196F3'; // Blue for regular regions
+    let fillColor = 'rgba(33, 150, 243, 0.1)';
+    
+    if (isCode) {
+      boxColor = '#4CAF50'; // Green for code
+      fillColor = 'rgba(76, 175, 80, 0.15)';
+    }
+
+    // Draw semi-transparent fill
+    this.ctx.fillStyle = fillColor;
+    this.ctx.fillRect(x, y, width, height);
+
+    // Draw thick border
+    this.ctx.strokeStyle = boxColor;
+    this.ctx.lineWidth = 4;
     this.ctx.strokeRect(x, y, width, height);
 
-    // Draw corner accents for better visibility
-    const cornerLength = 15;
-    this.ctx.lineWidth = CONFIG.BOX_THICKNESS + 1;
+    // Draw corner markers for better visibility
+    const cornerSize = 20;
+    this.ctx.lineWidth = 6;
     
     // Top-left
     this.ctx.beginPath();
-    this.ctx.moveTo(x, y + cornerLength);
+    this.ctx.moveTo(x, y + cornerSize);
     this.ctx.lineTo(x, y);
-    this.ctx.lineTo(x + cornerLength, y);
+    this.ctx.lineTo(x + cornerSize, y);
     this.ctx.stroke();
 
     // Top-right
     this.ctx.beginPath();
-    this.ctx.moveTo(x + width - cornerLength, y);
+    this.ctx.moveTo(x + width - cornerSize, y);
     this.ctx.lineTo(x + width, y);
-    this.ctx.lineTo(x + width, y + cornerLength);
+    this.ctx.lineTo(x + width, y + cornerSize);
     this.ctx.stroke();
 
     // Bottom-left
     this.ctx.beginPath();
-    this.ctx.moveTo(x, y + height - cornerLength);
+    this.ctx.moveTo(x, y + height - cornerSize);
     this.ctx.lineTo(x, y + height);
-    this.ctx.lineTo(x + cornerLength, y + height);
+    this.ctx.lineTo(x + cornerSize, y + height);
     this.ctx.stroke();
 
     // Bottom-right
     this.ctx.beginPath();
-    this.ctx.moveTo(x + width - cornerLength, y + height);
+    this.ctx.moveTo(x + width - cornerSize, y + height);
     this.ctx.lineTo(x + width, y + height);
-    this.ctx.lineTo(x + width, y + height - cornerLength);
+    this.ctx.lineTo(x + width, y + height - cornerSize);
     this.ctx.stroke();
   }
 
   private drawLabel(detection: Detection): void {
-    const { x, y, label, confidence, text } = detection;
+    const { x, y, label, text, isCode, ocrConfidence } = detection;
 
     // Prepare label text
-    let labelText = label;
-    if (this.settings.showConfidence) {
-      labelText += ` ${(confidence * 100).toFixed(0)}%`;
+    let labelText = label.toUpperCase();
+    
+    if (isCode !== undefined) {
+      labelText += isCode ? ' [CODE]' : ' [TEXT]';
     }
-    if (text && this.settings.enableOCR) {
-      labelText += ` | ${text.substring(0, 20)}`;
+    
+    if (text && text.length > 0) {
+      // Show first 30 chars of extracted text
+      const preview = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+      labelText += `: ${preview}`;
     }
+
+    // Choose color
+    const boxColor = isCode ? '#4CAF50' : '#2196F3';
 
     // Measure text
-    this.ctx.font = `${CONFIG.FONT_SIZE}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+    this.ctx.font = 'bold 16px monospace';
     const metrics = this.ctx.measureText(labelText);
     const textWidth = metrics.width;
-    const textHeight = CONFIG.FONT_SIZE;
+    const textHeight = 16;
 
     // Draw label background
-    const padding = CONFIG.LABEL_PADDING;
+    const padding = 8;
     const labelX = x;
-    const labelY = y - textHeight - padding * 2;
+    const labelY = y - textHeight - padding * 2 - 5;
     const labelWidth = textWidth + padding * 2;
     const labelHeight = textHeight + padding * 2;
 
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    // Solid background
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
     this.ctx.fillRect(labelX, labelY, labelWidth, labelHeight);
 
-    // Draw label border
-    this.ctx.strokeStyle = CONFIG.BOX_COLOR;
-    this.ctx.lineWidth = 1;
+    // Border
+    this.ctx.strokeStyle = boxColor;
+    this.ctx.lineWidth = 2;
     this.ctx.strokeRect(labelX, labelY, labelWidth, labelHeight);
 
-    // Draw label text
-    this.ctx.fillStyle = CONFIG.BOX_COLOR;
-    this.ctx.fillText(labelText, labelX + padding, labelY + textHeight);
-  }
-
-  drawStats(stats: { fps: number; latency: number; count: number }): void {
-    const x = 10;
-    const y = 30;
-    const lineHeight = 20;
-
-    this.ctx.font = '14px monospace';
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    this.ctx.fillRect(x - 5, y - 20, 200, lineHeight * 3 + 10);
-
-    this.ctx.fillStyle = CONFIG.BOX_COLOR;
-    this.ctx.fillText(`FPS: ${stats.fps.toFixed(1)}`, x, y);
-    this.ctx.fillText(`Latency: ${stats.latency.toFixed(0)}ms`, x, y + lineHeight);
-    this.ctx.fillText(`Detections: ${stats.count}`, x, y + lineHeight * 2);
+    // Text
+    this.ctx.fillStyle = boxColor;
+    this.ctx.fillText(labelText, labelX + padding, labelY + textHeight + 2);
   }
 
   blurRegion(x: number, y: number, width: number, height: number): void {
@@ -150,7 +150,6 @@ export class OverlayRenderer {
   }
 
   private applyGaussianBlur(imageData: ImageData): ImageData {
-    // Simple box blur approximation
     const { data, width, height } = imageData;
     const output = new Uint8ClampedArray(data);
     const radius = 5;
