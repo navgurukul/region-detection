@@ -13,5 +13,7 @@ public/models/*.pt
 # Training artifacts
 runs/
 datasets/
+dataset/
+training/dataset/
 *.pt
 *.pth
