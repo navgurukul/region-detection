@@ -74,34 +74,42 @@ class App {
       });
     }
 
-    // Settings
+    // Settings (optional elements)
     const showLabelsCheckbox = document.getElementById('showLabels') as HTMLInputElement;
     const showConfidenceCheckbox = document.getElementById('showConfidence') as HTMLInputElement;
     const enableOCRCheckbox = document.getElementById('enableOCR') as HTMLInputElement;
     const confidenceSlider = document.getElementById('confidenceThreshold') as HTMLInputElement;
     const confidenceValue = document.getElementById('confidenceValue') as HTMLSpanElement;
 
-    showLabelsCheckbox.addEventListener('change', (e) => {
-      this.settings.showLabels = (e.target as HTMLInputElement).checked;
-      this.overlay.updateSettings(this.settings);
-    });
+    if (showLabelsCheckbox) {
+      showLabelsCheckbox.addEventListener('change', (e) => {
+        this.settings.showLabels = (e.target as HTMLInputElement).checked;
+        this.overlay.updateSettings(this.settings);
+      });
+    }
 
-    showConfidenceCheckbox.addEventListener('change', (e) => {
-      this.settings.showConfidence = (e.target as HTMLInputElement).checked;
-      this.overlay.updateSettings(this.settings);
-    });
+    if (showConfidenceCheckbox) {
+      showConfidenceCheckbox.addEventListener('change', (e) => {
+        this.settings.showConfidence = (e.target as HTMLInputElement).checked;
+        this.overlay.updateSettings(this.settings);
+      });
+    }
 
-    enableOCRCheckbox.addEventListener('change', (e) => {
-      this.settings.enableOCR = (e.target as HTMLInputElement).checked;
-      this.overlay.updateSettings(this.settings);
-    });
+    if (enableOCRCheckbox) {
+      enableOCRCheckbox.addEventListener('change', (e) => {
+        this.settings.enableOCR = (e.target as HTMLInputElement).checked;
+        this.overlay.updateSettings(this.settings);
+      });
+    }
 
-    confidenceSlider.addEventListener('input', (e) => {
-      const value = parseFloat((e.target as HTMLInputElement).value);
-      this.settings.confidenceThreshold = value;
-      confidenceValue.textContent = value.toFixed(1);
-      this.overlay.updateSettings(this.settings);
-    });
+    if (confidenceSlider && confidenceValue) {
+      confidenceSlider.addEventListener('input', (e) => {
+        const value = parseFloat((e.target as HTMLInputElement).value);
+        this.settings.confidenceThreshold = value;
+        confidenceValue.textContent = value.toFixed(1);
+        this.overlay.updateSettings(this.settings);
+      });
+    }
 
     // Screen share ended
     window.addEventListener('screenshare-ended', () => {
