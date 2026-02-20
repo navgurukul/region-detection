@@ -25,30 +25,38 @@ export class HybridDetector {
   private isProcessing = false;
 
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {
+      console.log('[Hybrid] Already initialized');
+      return;
+    }
 
-    console.log('[Hybrid] Initializing Tesseract...');
+    console.log('[Hybrid] Starting Tesseract initialization...');
     
-    this.worker = await createWorker('eng', 1, {
-      logger: (m) => {
-        if (m.status === 'recognizing text') {
-          console.log(`[Hybrid] OCR Progress: ${Math.round(m.progress * 100)}%`);
-        }
-      },
-    });
+    try {
+      this.worker = await createWorker('eng', 1, {
+        logger: (m) => {
+          console.log(`[Tesseract] ${m.status}: ${m.progress ? Math.round(m.progress * 100) + '%' : ''}`);
+        },
+      });
 
-    // Use automatic page segmentation with OSD
-    await this.worker.setParameters({
-      tessedit_pageseg_mode: Tesseract.PSM.AUTO_OSD,
-    });
+      console.log('[Hybrid] Setting parameters...');
+      
+      // Use automatic page segmentation with OSD
+      await this.worker.setParameters({
+        tessedit_pageseg_mode: Tesseract.PSM.AUTO_OSD,
+      });
 
-    this.isInitialized = true;
-    console.log('[Hybrid] Ready!');
+      this.isInitialized = true;
+      console.log('[Hybrid] ✓ Ready!');
+    } catch (error) {
+      console.error('[Hybrid] Initialization failed:', error);
+      throw error;
+    }
   }
 
   async detectRegions(imageData: ImageData): Promise<HybridRegion[]> {
     if (!this.isInitialized || !this.worker) {
-      console.warn('[Hybrid] Tesseract not ready');
+      console.warn('[Hybrid] Tesseract not ready, returning empty');
       return [];
     }
 
@@ -56,21 +64,25 @@ export class HybridDetector {
     
     // If we're currently processing, return cached results
     if (this.isProcessing) {
+      console.log('[Hybrid] Still processing, returning cached results');
       return this.cachedRegions;
     }
     
     // Use Tesseract only every N seconds (it's slow)
     if (now - this.lastProcessTime < this.processingInterval) {
+      console.log(`[Hybrid] Using cache (${Math.round((this.processingInterval - (now - this.lastProcessTime)) / 1000)}s until next scan)`);
       return this.cachedRegions;
     }
 
     // Start new Tesseract processing
+    console.log('[Hybrid] Starting new Tesseract scan...');
     this.lastProcessTime = now;
     this.isProcessing = true;
     
     try {
       const regions = await this.fullTesseractDetection(imageData);
       this.cachedRegions = regions;
+      console.log(`[Hybrid] Cached ${regions.length} regions`);
       return regions;
     } finally {
       this.isProcessing = false;
@@ -184,12 +196,58 @@ export class HybridDetector {
       }
 
       console.log(`[Hybrid] Returning ${regions.length} regions`);
+      
+      // If Tesseract found nothing, use simple window detection
+      if (regions.length === 0) {
+        console.log('[Hybrid] No text found, using window detection fallback');
+        return this.detectWindows(imageData, scaleX, scaleY);
+      }
+      
       return regions;
 
     } catch (error) {
       console.error('[Hybrid] Tesseract error:', error);
       return [];
     }
+  }
+
+  /**
+   * Fallback: Detect likely window regions using contrast analysis
+   */
+  private detectWindows(imageData: ImageData, scaleX: number, scaleY: number): HybridRegion[] {
+    const { width, height } = imageData;
+    const regions: HybridRegion[] = [];
+    
+    // Detect common window sizes and positions
+    const commonLayouts = [
+      // Full screen
+      { x: 0, y: 0, width: width, height: height },
+      // Left half
+      { x: 0, y: 0, width: width / 2, height: height },
+      // Right half
+      { x: width / 2, y: 0, width: width / 2, height: height },
+      // Top half
+      { x: 0, y: 0, width: width, height: height / 2 },
+      // Bottom half
+      { x: 0, y: height / 2, width: width, height: height / 2 },
+    ];
+    
+    for (const layout of commonLayouts) {
+      if (layout.width > 200 && layout.height > 200) {
+        regions.push({
+          type: 'window',
+          x: layout.x,
+          y: layout.y,
+          width: layout.width,
+          height: layout.height,
+          confidence: 0.6,
+          text: 'Window region',
+          isCode: false,
+        });
+      }
+    }
+    
+    return regions;
   }
 
   /**

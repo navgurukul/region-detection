@@ -111,10 +111,16 @@ class App {
   }
 
   private async initializeDetector(): Promise<void> {
+    if (this.stats.modelLoaded) {
+      console.log('[App] Detector already initialized');
+      return;
+    }
+
     try {
       this.loading.style.display = 'block';
-      this.loading.textContent = 'Initializing Tesseract OCR...';
+      this.loading.textContent = 'Initializing Tesseract OCR... (this may take 10-20 seconds)';
       
+      console.log('[App] Starting detector initialization...');
       await this.detector.initialize();
       
       this.stats.modelLoaded = true;
@@ -123,7 +129,8 @@ class App {
       console.log('✓ Hybrid detector ready');
     } catch (error) {
       console.error('Failed to initialize:', error);
-      this.loading.textContent = 'Failed to initialize. Refresh to try again.';
+      this.loading.textContent = `Failed to initialize: ${error}. Refresh to try again.`;
+      throw error;
     }
   }
 
@@ -131,6 +138,13 @@ class App {
     if (this.isRunning) return;
 
     try {
+      // Make sure detector is initialized first
+      if (!this.stats.modelLoaded) {
+        this.loading.style.display = 'block';
+        this.loading.textContent = 'Waiting for Tesseract to initialize...';
+        await this.initializeDetector();
+      }
+
       // Start screen capture
       await this.screenCapture.start();
 
@@ -139,6 +153,7 @@ class App {
       this.startBtn.disabled = true;
       this.stopBtn.disabled = false;
       this.placeholder.style.display = 'none';
+      this.loading.style.display = 'none';
       this.statsElement.style.display = 'block';
 
       // Start detection loop
