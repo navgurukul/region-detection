@@ -258,6 +258,11 @@ class App {
       this.stats.latency = performance.now() - startTime;
       this.stats.detectionCount = detections.length;
 
+      console.log(`[App] Frame processed: ${detections.length} detections`);
+      if (detections.length > 0) {
+        console.log('[App] Detections:', detections.map(d => `${d.label} at (${d.x},${d.y})`));
+      }
+
       // Draw overlay only if showBounds is enabled
       if (this.showBounds) {
         this.overlay.drawDetections(detections, this.videoElement);
