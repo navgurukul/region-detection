@@ -35,6 +35,7 @@ jobs:
         run: |
           export NODE_ENV=production
           npm run build
+          touch dist/.nojekyll
           ls -la dist/
           echo "Build completed successfully"
         
