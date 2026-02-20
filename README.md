@@ -2,184 +2,81 @@
 
 <div align="center">
 
-### 🌐 100% CLIENT-SIDE | 🔒 NO BACKEND | 🚀 NO UPLOADS
+**100% Client-Side Screen Region Detection Library**
 
-**Real-time text region detection during screen sharing using Tesseract.js OCR**
+Real-time text region detection using Tesseract.js OCR - runs entirely in the browser
 
-Everything runs in your browser. Zero server infrastructure. Complete privacy.
+[![NPM Version](https://img.shields.io/npm/v/@navgurukul/screen-region-detector?style=flat-square)](https://www.npmjs.com/package/@navgurukul/screen-region-detector)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
+[![No Backend](https://img.shields.io/badge/Backend-None-brightgreen?style=flat-square)]()
 
-[![Client-Side](https://img.shields.io/badge/Architecture-Client--Side%20Only-brightgreen?style=for-the-badge)]()
-[![No Backend](https://img.shields.io/badge/Backend-None-blue?style=for-the-badge)]()
-[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local-orange?style=for-the-badge)]()
-
-[Live Demo](https://navgurukul.github.io/region-detection/) | [Documentation](./docs/INDEX.md) | [Training Guide](./training/TRAINING_GUIDE.md)
+[Live Demo](https://navgurukul.github.io/region-detection/) | [Documentation](./docs/INDEX.md) | [GitHub](https://github.com/navgurukul/region-detection)
 
 </div>
 
 ---
 
-## 🎉 What Makes This Special
-
-This is **NOT** a typical screen detection system. There is:
-- ❌ **NO backend server**
-- ❌ **NO API endpoints**
-- ❌ **NO frame uploads**
-- ❌ **NO cloud processing**
-- ❌ **NO database**
-- ❌ **NO server costs**
-
-Instead:
-- ✅ **Everything runs in your browser**
-- ✅ **OCR inference happens locally**
-- ✅ **Your screen data never leaves your device**
-- ✅ **Works offline after first load**
-- ✅ **Deploy as static files anywhere**
-- ✅ **Infinite scalability (no servers!)**
-
-## ✨ Features
-
-- ✅ **100% client-side processing** (no server required)
-- ✅ **Real-time detection** at 10 FPS
-- ✅ **Tesseract.js OCR** - automatic text region detection
-- ✅ **Code detection** - identifies code vs regular text
-- ✅ **Color-coded regions:**
-  - 🔵 Blue boxes for text regions
-  - 🟢 Green boxes for code regions
-- ✅ **Toggle visibility** - show/hide detection bounds
-- ✅ **Privacy-focused** - no data leaves browser
-- ✅ **Offline-capable** after first load
-- ✅ **Current accuracy: ~50%** (text region detection)
-- ✅ **Upgradeable to 80-90%** (with custom YOLOv8 training)
-
-## 🚀 Quick Start
-
-### For Users (Demo)
+## 📦 Installation
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/navgurukul/region-detection.git
-cd region-detection/screen-region-detector-client
-
-# 2. Install dependencies
-npm install
-
-# 3. Start development server
-npm run dev
-```
-
-Open http://localhost:5173 and click "Start Detection"
-
-**That's it!** No backend to configure, no database to setup, no API keys needed.
-
-### For Developers (Integration)
-
-```bash
-# Install as npm package (coming soon)
 npm install @navgurukul/screen-region-detector
 ```
+
+## 🚀 Quick Start
 
 ```typescript
 import { HybridDetector } from '@navgurukul/screen-region-detector';
 
-// Initialize detector
+// Initialize the detector (takes 10-20 seconds for Tesseract to load)
 const detector = new HybridDetector();
 await detector.initialize();
 
-// Detect regions in an image
-const imageData = canvas.getContext('2d').getImageData(0, 0, width, height);
+// Get screen capture
+const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+const video = document.createElement('video');
+video.srcObject = stream;
+await video.play();
+
+// Capture frame
+const canvas = document.createElement('canvas');
+canvas.width = video.videoWidth;
+canvas.height = video.videoHeight;
+const ctx = canvas.getContext('2d');
+ctx.drawImage(video, 0, 0);
+const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+// Detect regions
 const regions = await detector.detectRegions(imageData);
 
 // Process results
 regions.forEach(region => {
   console.log(`Found ${region.type} at (${region.x}, ${region.y})`);
+  console.log(`Size: ${region.width}x${region.height}`);
   console.log(`Text: ${region.text}`);
   console.log(`Is code: ${region.isCode}`);
+  console.log(`Confidence: ${region.confidence}`);
 });
+
+// Clean up
+await detector.terminate();
 ```
 
-## 📦 Installation Options
+## ✨ Features
 
-### Option 1: Use the Demo App
-Visit the [live demo](https://navgurukul.github.io/region-detection/) - no installation needed!
+- ✅ **100% client-side** - No backend server required
+- ✅ **Privacy-focused** - All processing happens in browser
+- ✅ **Tesseract.js OCR** - Automatic text region detection
+- ✅ **Code detection** - Distinguishes code from regular text
+- ✅ **Real-time processing** - Optimized for 10 FPS
+- ✅ **TypeScript support** - Full type definitions included
+- ✅ **Zero dependencies** - Only Tesseract.js and ONNX Runtime
+- ✅ **Offline-capable** - Works without internet after first load
 
-### Option 2: Clone and Run Locally
-```bash
-git clone https://github.com/navgurukul/region-detection.git
-cd region-detection/screen-region-detector-client
-npm install
-npm run dev
-```
-
-### Option 3: Integrate into Your Project
-```bash
-npm install @navgurukul/screen-region-detector
-```
-
-## 🎓 Training Your Own Model (Optional - For 80-90% Accuracy)
-
-The system works out of the box with ~50% accuracy using Tesseract OCR. For better accuracy, train a custom YOLOv8 model:
-
-```bash
-# 1. Collect screenshots of your workspace
-cd training
-bash take_screenshots.sh
-
-# 2. Label on Roboflow.com (free)
-#    - Upload screenshots
-#    - Draw boxes around regions
-#    - Export as YOLOv8 format
-
-# 3. Train the model
-pip install -r requirements.txt
-python train_model.py
-
-# 4. Convert to browser format
-python convert_to_onnx.py
-
-# 5. Done! Model is now in public/models/
-```
-
-**See detailed guides:**
-- [training/TRAINING_GUIDE.md](training/TRAINING_GUIDE.md) - Complete step-by-step
-- [training/SCREENSHOT-EXAMPLES.md](training/SCREENSHOT-EXAMPLES.md) - What screenshots to take
-- [CLIENT-SIDE-SOLUTION.md](CLIENT-SIDE-SOLUTION.md) - How it stays client-side
-
-**Training time:** 2-3 hours total (mostly screenshot collection)
-**Result:** 80-90%+ accurate detection vs 50% with OCR only
-
-## 🏗️ Architecture (Pure Client-Side)
-
-```
-┌─────────────────────────────────────────────────────────┐
-│              YOUR BROWSER (Everything Here!)            │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  Screen Capture ──► Video Element ──► Canvas            │
-│                                          │               │
-│                                          ▼               │
-│                                   Tesseract.js           │
-│                                          │               │
-│                                          ▼               │
-│                                    Text Regions          │
-│                                          │               │
-│                                          ▼               │
-│                                   Code Detection         │
-│                                          │               │
-│                                          ▼               │
-│                                   Overlay Canvas         │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-
-         NO NETWORK REQUESTS DURING DETECTION ✓
-         NO SERVER COMMUNICATION ✓
-         NO DATA LEAVES YOUR DEVICE ✓
-```
-
-## 📖 API Documentation
+## 📖 API Reference
 
 ### HybridDetector
 
-Main detector class combining Tesseract OCR with edge detection.
+Main detector class combining Tesseract OCR with layout analysis.
 
 ```typescript
 class HybridDetector {
@@ -192,25 +89,31 @@ class HybridDetector {
   // Clean up resources
   async terminate(): Promise<void>
 }
+```
 
+### HybridRegion
+
+```typescript
 interface HybridRegion {
   type: 'window' | 'text' | 'code' | 'ui';
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  confidence: number;
-  text?: string;
-  isCode?: boolean;
+  x: number;              // X coordinate
+  y: number;              // Y coordinate
+  width: number;          // Region width
+  height: number;         // Region height
+  confidence: number;     // Detection confidence (0-1)
+  text?: string;          // Extracted text (if any)
+  isCode?: boolean;       // True if region contains code
 }
 ```
 
 ### ScreenCapture
 
-Handles screen sharing via WebRTC.
+Utility class for screen sharing.
 
 ```typescript
 class ScreenCapture {
+  constructor(videoElement: HTMLVideoElement)
+  
   async start(): Promise<void>
   stop(): void
   getStreamDimensions(): { width: number; height: number }
@@ -219,179 +122,208 @@ class ScreenCapture {
 
 ### OverlayRenderer
 
-Draws detection boxes on canvas.
+Utility class for drawing detection boxes.
 
 ```typescript
 class OverlayRenderer {
+  constructor(canvas: HTMLCanvasElement, settings: Settings)
+  
   drawDetections(detections: Detection[], video: HTMLVideoElement): void
   clear(): void
   updateSettings(settings: Settings): void
 }
 ```
 
-## 🔒 Security & Privacy
+## 🎨 Complete Example
 
-- ✅ All processing happens in browser
-- ✅ No frames uploaded anywhere
-- ✅ No external API calls for inference
-- ✅ Tesseract runs locally in WebAssembly
-- ✅ No telemetry or tracking
-- ✅ Works completely offline
+```typescript
+import {
+  HybridDetector,
+  ScreenCapture,
+  OverlayRenderer,
+  type HybridRegion
+} from '@navgurukul/screen-region-detector';
 
-## 💡 Why Client-Side Matters
+// Setup
+const video = document.getElementById('video') as HTMLVideoElement;
+const canvas = document.getElementById('canvas') as HTMLCanvasElement;
 
-**For Users:**
-- Your screen data is 100% private
-- No risk of data breaches on servers
-- Works without internet connection
-- No subscription or API costs
+const detector = new HybridDetector();
+const screenCapture = new ScreenCapture(video);
+const overlay = new OverlayRenderer(canvas, {
+  showLabels: true,
+  showConfidence: true,
+  enableOCR: true,
+  confidenceThreshold: 0.5
+});
 
-**For Developers:**
-- Zero server costs (no backend!)
-- Infinite scalability (each user runs their own inference)
-- No infrastructure to maintain
-- Deploy anywhere static files are served
-- No API rate limits or quotas
+// Initialize
+await detector.initialize();
+await screenCapture.start();
 
-**For Companies:**
-- No data compliance issues (GDPR, HIPAA, etc.)
-- No server infrastructure costs
-- No data storage requirements
-- Reduced liability
-
-## 🚢 Deployment (Static Files Only!)
-
-Since there's no backend, deployment is trivial:
-
-### Option 1: GitHub Pages (Free)
-```bash
-npm run build
-npx gh-pages -d dist
+// Detection loop
+setInterval(async () => {
+  // Get frame
+  const { width, height } = screenCapture.getStreamDimensions();
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const ctx = tempCanvas.getContext('2d')!;
+  ctx.drawImage(video, 0, 0);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  
+  // Detect
+  const regions = await detector.detectRegions(imageData);
+  
+  // Draw
+  const detections = regions.map(r => ({
+    label: r.type + (r.isCode ? ' (code)' : ''),
+    confidence: r.confidence,
+    x: r.x,
+    y: r.y,
+    width: r.width,
+    height: r.height,
+    text: r.text,
+    isCode: r.isCode
+  }));
+  
+  overlay.drawDetections(detections, video);
+}, 3000); // Every 3 seconds
 ```
-
-### Option 2: Netlify (Drag & Drop)
-```bash
-npm run build
-# Drag dist/ folder to netlify.com/drop
-```
-
-### Option 3: Vercel
-```bash
-npm run build
-npx vercel --prod
-```
-
-### Option 4: Any Static Host
-```bash
-npm run build
-# Upload dist/ to:
-# - AWS S3
-# - Cloudflare Pages
-# - Firebase Hosting
-# - Your own web server
-```
-
-**No server configuration needed!** Just serve the static files with HTTPS.
-
-## 🌐 Browser Requirements
-
-- Chrome 90+ or Edge 90+ (recommended)
-- Firefox 88+ (may have performance differences)
-- Safari 15.4+ (limited support)
-- HTTPS required (except localhost)
-- Minimum 4GB RAM recommended
 
 ## ⚙️ Configuration
 
 ```typescript
-// src/config.ts
-export const CONFIG = {
-  DETECTION_FPS: 10,           // Frames per second (5-15)
-  MIN_REGION_SIZE: 150,        // Minimum region size in pixels
-  EDGE_THRESHOLD: 50,          // Edge detection sensitivity
-  MERGE_THRESHOLD: 0.3,        // Region merging threshold
-};
+import { CONFIG } from '@navgurukul/screen-region-detector';
+
+// Adjust detection settings
+CONFIG.DETECTION_FPS = 10;           // Frames per second
+CONFIG.MIN_REGION_SIZE = 150;        // Minimum region size (pixels)
+CONFIG.EDGE_THRESHOLD = 50;          // Edge detection sensitivity
+CONFIG.MERGE_THRESHOLD = 0.3;        // Region merging threshold
 ```
+
+## 🎯 Use Cases
+
+- **Screen recording analysis** - Detect UI regions in recordings
+- **Accessibility tools** - Identify text regions for screen readers
+- **Code detection** - Find code snippets in screenshots
+- **Layout analysis** - Understand screen composition
+- **Privacy tools** - Detect sensitive regions before sharing
+- **Testing automation** - Verify UI layout in tests
+
+## 🔒 Privacy & Security
+
+- ✅ All processing happens in browser (no server)
+- ✅ No data uploaded or stored anywhere
+- ✅ No external API calls during detection
+- ✅ Tesseract runs locally via WebAssembly
+- ✅ Works completely offline after first load
+- ✅ No telemetry or tracking
+
+## 📊 Performance
+
+- **Initialization:** 10-20 seconds (one-time, loads Tesseract)
+- **Detection:** ~300-500ms per frame (1280x720)
+- **Accuracy:** ~50% (text region detection)
+- **Memory:** ~100-200MB (Tesseract + ONNX Runtime)
+- **FPS:** 10 FPS recommended (adjustable)
+
+## 🎓 Advanced: Train Custom Model
+
+For 80-90% accuracy, train a custom YOLOv8 model:
+
+```bash
+# 1. Collect screenshots
+cd node_modules/@navgurukul/screen-region-detector/training
+bash take_screenshots.sh
+
+# 2. Label on Roboflow.com (free)
+# 3. Train model
+pip install -r requirements.txt
+python train_model.py
+
+# 4. Convert to browser format
+python convert_to_onnx.py
+```
+
+See [training/TRAINING_GUIDE.md](./training/TRAINING_GUIDE.md) for details.
+
+## 🌐 Browser Support
+
+- Chrome 90+ ✅
+- Edge 90+ ✅
+- Firefox 88+ ✅
+- Safari 15.4+ ⚠️ (limited)
+
+**Requirements:**
+- HTTPS (required for screen sharing)
+- WebAssembly support
+- 4GB+ RAM recommended
 
 ## 🐛 Troubleshooting
 
-**Tesseract not initializing:**
-- Wait 10-20 seconds for first load
-- Check browser console for errors
-- Ensure HTTPS (required for screen sharing)
+### Tesseract not initializing
+```typescript
+// Wait for initialization
+await detector.initialize();
+console.log('Tesseract ready!');
+```
 
-**No regions detected:**
-- Make sure there's text on screen
-- Check "Show Bounds" checkbox is enabled
-- Wait 3 seconds for first Tesseract scan
+### No regions detected
+```typescript
+// Check if image has text
+const regions = await detector.detectRegions(imageData);
+console.log(`Found ${regions.length} regions`);
+```
 
-**Slow performance:**
-- Reduce `DETECTION_FPS` in config
-- Close other browser tabs
-- Check if WebAssembly is enabled
-
-**Screen capture fails:**
-- Must use HTTPS in production
-- Check browser permissions
-- Try Chrome/Edge (best support)
+### Slow performance
+```typescript
+// Reduce image size before detection
+const scale = 0.5;
+const smallCanvas = document.createElement('canvas');
+smallCanvas.width = canvas.width * scale;
+smallCanvas.height = canvas.height * scale;
+const smallCtx = smallCanvas.getContext('2d')!;
+smallCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
+const imageData = smallCtx.getImageData(0, 0, smallCanvas.width, smallCanvas.height);
+```
 
 ## 📚 Documentation
 
-- [docs/INDEX.md](docs/INDEX.md) - Documentation index
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture
-- [docs/API-USAGE.md](docs/API-USAGE.md) - API reference
-- [docs/TRAINING.md](docs/TRAINING.md) - Model training guide
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment options
-- [docs/FAQ.md](docs/FAQ.md) - Frequently asked questions
+- [API Documentation](./docs/API-USAGE.md)
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Training Guide](./training/TRAINING_GUIDE.md)
+- [Deployment](./docs/DEPLOYMENT.md)
+- [FAQ](./docs/FAQ.md)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our contributing guidelines first.
+Contributions welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) first.
 
 ```bash
-# Fork the repo
-git clone https://github.com/YOUR_USERNAME/region-detection.git
+git clone https://github.com/navgurukul/region-detection.git
 cd region-detection/screen-region-detector-client
-
-# Create a branch
-git checkout -b feature/your-feature
-
-# Make changes and test
+npm install
 npm run dev
-
-# Commit and push
-git commit -m "Add your feature"
-git push origin feature/your-feature
-
-# Open a Pull Request
 ```
 
 ## 📝 License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License - see [LICENSE](./LICENSE) file
 
-## 🙏 Acknowledgments
+## 🙏 Credits
 
 - [Tesseract.js](https://tesseract.projectnaptha.com/) - OCR engine
-- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) - Object detection
 - [ONNX Runtime Web](https://onnxruntime.ai/) - Browser inference
-
-## 📊 Project Status
-
-- ✅ Core functionality complete
-- ✅ Tesseract OCR integration working
-- ✅ Code detection implemented
-- ✅ Training infrastructure ready
-- 🚧 NPM package (coming soon)
-- 🚧 React/Vue components (planned)
-- 🚧 Advanced layout analysis (planned)
+- [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) - Object detection
 
 ## 🔗 Links
 
-- **Live Demo:** https://navgurukul.github.io/region-detection/
+- **NPM:** https://www.npmjs.com/package/@navgurukul/screen-region-detector
 - **GitHub:** https://github.com/navgurukul/region-detection
+- **Live Demo:** https://navgurukul.github.io/region-detection/
 - **Issues:** https://github.com/navgurukul/region-detection/issues
-- **NPM:** (coming soon)
 
 ---
 
