@@ -19,8 +19,10 @@ export interface HybridRegion {
 export class HybridDetector {
   private worker: Tesseract.Worker | null = null;
   private isInitialized = false;
+  private cachedRegions: HybridRegion[] = [];
   private lastProcessTime = 0;
-  private processingInterval = 2000; // Process with Tesseract every 2 seconds
+  private processingInterval = 3000; // Process with Tesseract every 3 seconds
+  private isProcessing = false;
 
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
@@ -45,15 +47,34 @@ export class HybridDetector {
   }
 
   async detectRegions(imageData: ImageData): Promise<HybridRegion[]> {
+    if (!this.isInitialized || !this.worker) {
+      console.warn('[Hybrid] Tesseract not ready');
+      return [];
+    }
+
     const now = Date.now();
+    
+    // If we're currently processing, return cached results
+    if (this.isProcessing) {
+      return this.cachedRegions;
+    }
     
     // Use Tesseract only every N seconds (it's slow)
     if (now - this.lastProcessTime < this.processingInterval) {
-      return this.quickEdgeDetection(imageData);
+      return this.cachedRegions;
     }
 
+    // Start new Tesseract processing
     this.lastProcessTime = now;
-    return this.fullTesseractDetection(imageData);
+    this.isProcessing = true;
+    
+    try {
+      const regions = await this.fullTesseractDetection(imageData);
+      this.cachedRegions = regions;
+      return regions;
+    } finally {
+      this.isProcessing = false;
+    }
   }
 
   /**
@@ -87,22 +108,50 @@ export class HybridDetector {
    */
   private async fullTesseractDetection(imageData: ImageData): Promise<HybridRegion[]> {
     if (!this.worker || !this.isInitialized) {
-      return this.quickEdgeDetection(imageData);
+      return [];
     }
 
     try {
-      console.log('[Hybrid] Running full Tesseract analysis...');
+      console.log('[Hybrid] Running Tesseract analysis...');
+      
+      // Resize image for faster processing (Tesseract is slow on large images)
+      const maxWidth = 1280;
+      const maxHeight = 720;
+      let { width, height } = imageData;
+      
+      let scaledWidth = width;
+      let scaledHeight = height;
+      
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        scaledWidth = Math.floor(width * scale);
+        scaledHeight = Math.floor(height * scale);
+        console.log(`[Hybrid] Scaling from ${width}x${height} to ${scaledWidth}x${scaledHeight}`);
+      }
       
       // Convert ImageData to canvas
       const canvas = document.createElement('canvas');
-      canvas.width = imageData.width;
-      canvas.height = imageData.height;
+      canvas.width = scaledWidth;
+      canvas.height = scaledHeight;
       const ctx = canvas.getContext('2d')!;
-      ctx.putImageData(imageData, 0, 0);
+      
+      // Draw scaled image
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tempCtx = tempCanvas.getContext('2d')!;
+      tempCtx.putImageData(imageData, 0, 0);
+      ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight);
 
       // Run Tesseract with layout analysis
+      const startTime = Date.now();
       const result = await this.worker.recognize(canvas);
+      const elapsed = Date.now() - startTime;
+      console.log(`[Hybrid] Tesseract completed in ${elapsed}ms`);
+      
       const regions: HybridRegion[] = [];
+      const scaleX = width / scaledWidth;
+      const scaleY = height / scaledHeight;
 
       // Process blocks (main text regions)
       if (result.data.blocks) {
@@ -110,21 +159,23 @@ export class HybridDetector {
         
         for (const block of result.data.blocks) {
           const { x0, y0, x1, y1 } = block.bbox;
-          const width = x1 - x0;
-          const height = y1 - y0;
+          const blockWidth = (x1 - x0) * scaleX;
+          const blockHeight = (y1 - y0) * scaleY;
 
           // Filter small regions
-          if (width < 80 || height < 40) continue;
+          if (blockWidth < 80 || blockHeight < 40) continue;
 
           const text = block.text.trim();
+          if (!text) continue;
+          
           const isCode = this.isCodeBlock(text);
 
           regions.push({
             type: isCode ? 'code' : 'text',
-            x: x0,
-            y: y0,
-            width,
-            height,
+            x: x0 * scaleX,
+            y: y0 * scaleY,
+            width: blockWidth,
+            height: blockHeight,
             confidence: block.confidence / 100,
             text,
             isCode,
@@ -132,39 +183,12 @@ export class HybridDetector {
         }
       }
 
-      // Also check paragraphs for finer granularity
-      if (result.data.paragraphs && regions.length < 3) {
-        console.log(`[Hybrid] Adding ${result.data.paragraphs.length} paragraphs`);
-        
-        for (const para of result.data.paragraphs) {
-          const { x0, y0, x1, y1 } = para.bbox;
-          const width = x1 - x0;
-          const height = y1 - y0;
-
-          if (width < 80 || height < 40) continue;
-
-          const text = para.text.trim();
-          const isCode = this.isCodeBlock(text);
-
-          regions.push({
-            type: isCode ? 'code' : 'text',
-            x: x0,
-            y: y0,
-            width,
-            height,
-            confidence: para.confidence / 100,
-            text,
-            isCode,
-          });
-        }
-      }
-
       console.log(`[Hybrid] Returning ${regions.length} regions`);
-      return regions.length > 0 ? regions : this.quickEdgeDetection(imageData);
+      return regions;
 
     } catch (error) {
       console.error('[Hybrid] Tesseract error:', error);
-      return this.quickEdgeDetection(imageData);
+      return [];
     }
   }
 
