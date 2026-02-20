@@ -1,13 +1,54 @@
 {
-  "name": "screen-region-detector-client",
+  "name": "@navgurukul/screen-region-detector",
   "version": "1.0.0",
-  "description": "100% client-side screen region detection with AI - NO BACKEND REQUIRED",
+  "description": "100% client-side screen region detection with Tesseract OCR - NO BACKEND REQUIRED",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "screen-detection",
+    "ocr",
+    "tesseract",
+    "client-side",
+    "browser",
+    "screen-sharing",
+    "region-detection",
+    "text-detection",
+    "code-detection",
+    "no-backend",
+    "privacy",
+    "offline"
+  ],
+  "author": "NavGurukul",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/navgurukul/region-detection.git",
+    "directory": "screen-region-detector-client"
+  },
+  "bugs": {
+    "url": "https://github.com/navgurukul/region-detection/issues"
+  },
+  "homepage": "https://navgurukul.github.io/region-detection/",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:lib": "tsc --declaration --emitDeclarationOnly && vite build --mode lib",
     "preview": "vite preview",
-    "lint": "eslint src --ext ts,tsx"
+    "lint": "eslint src --ext ts,tsx",
+    "prepublishOnly": "npm run build:lib"
   },
   "dependencies": {
     "onnxruntime-web": "^1.17.0",
@@ -20,5 +61,8 @@
     "eslint": "^8.56.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
