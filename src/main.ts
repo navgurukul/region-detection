@@ -41,7 +41,7 @@ class App {
       showLabels: true,
       showConfidence: true,
       enableOCR: false,
-      confidenceThreshold: CONFIG.CONFIDENCE_THRESHOLD,
+      confidenceThreshold: 0.5, // Default threshold
     };
 
     // Initialize stats

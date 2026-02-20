@@ -214,7 +214,7 @@ export class HybridDetector {
   /**
    * Fallback: Detect likely window regions using contrast analysis
    */
-  private detectWindows(imageData: ImageData, scaleX: number, scaleY: number): HybridRegion[] {
+  private detectWindows(imageData: ImageData, _scaleX: number, _scaleY: number): HybridRegion[] {
     const { width, height } = imageData;
     const regions: HybridRegion[] = [];
     
