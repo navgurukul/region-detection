@@ -16,10 +16,141 @@ Real-time text region detection using Tesseract.js OCR - runs entirely in the br
 
 ---
 
+## 📸 What It Does
+
+Screen Region Detector automatically identifies and extracts text regions from your screen in real-time. Perfect for screen recording analysis, accessibility tools, and privacy applications.
+
+### Visual Examples
+
+**Input: Your Screen**
+```
+┌─────────────────────────────────────────────────────────┐
+│  VS Code                                    Chrome       │
+│  ┌──────────────────┐  ┌──────────────────────────────┐│
+│  │ function hello() {│  │ Documentation                ││
+│  │   console.log()  │  │                              ││
+│  │ }                │  │ Getting Started              ││
+│  └──────────────────┘  │ - Installation               ││
+│                        │ - Quick Start                ││
+│  Terminal              └──────────────────────────────┘│
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ $ npm install                                    │  │
+│  │ $ npm run dev                                    │  │
+│  └──────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Output: Detected Regions**
+```javascript
+[
+  {
+    type: "code",
+    x: 50, y: 100,
+    width: 300, height: 150,
+    text: "function hello() {\n  console.log()\n}",
+    isCode: true,
+    confidence: 0.85
+  },
+  {
+    type: "text",
+    x: 400, y: 100,
+    width: 400, height: 200,
+    text: "Documentation\nGetting Started\n- Installation\n- Quick Start",
+    isCode: false,
+    confidence: 0.92
+  },
+  {
+    type: "code",
+    x: 50, y: 300,
+    width: 600, height: 100,
+    text: "$ npm install\n$ npm run dev",
+    isCode: true,
+    confidence: 0.88
+  }
+]
+```
+
+### Key Features Visualization
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    YOUR SCREEN                          │
+│                                                          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │ 🟢 CODE      │  │ 🔵 TEXT      │  │ 🟢 CODE      │ │
+│  │ Detected!    │  │ Detected!    │  │ Detected!    │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘ │
+│                                                          │
+│  ✓ Text extracted    ✓ Code identified    ✓ Real-time  │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Use Case Examples
+
+**1. Screen Recording Analysis**
+- Automatically detect and blur sensitive code regions
+- Extract text from tutorial videos
+- Generate subtitles from screen content
+
+**2. Accessibility Tools**
+- Read screen content for visually impaired users
+- Identify clickable regions
+- Extract text for screen readers
+
+**3. Privacy Protection**
+- Detect sensitive information before sharing
+- Automatically blur passwords and API keys
+- Identify code regions in screenshots
+
+**4. Development Tools**
+- Extract code from screenshots
+- Analyze UI layouts
+- Test screen sharing applications
+
+---
+
 ## 📦 Installation
 
 ```bash
 npm install @navgurukul/screen-region-detector
+```
+
+## 🏗️ How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    YOUR BROWSER (100% Client-Side)              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. Screen Capture                                              │
+│     └─► navigator.mediaDevices.getDisplayMedia()                │
+│                          │                                       │
+│                          ▼                                       │
+│  2. Video Frame Extraction                                      │
+│     └─► Canvas.drawImage(video)                                 │
+│                          │                                       │
+│                          ▼                                       │
+│  3. Tesseract.js OCR (WebAssembly)                             │
+│     └─► Detects text blocks with bounding boxes                │
+│                          │                                       │
+│                          ▼                                       │
+│  4. Code Detection Algorithm                                    │
+│     └─► Analyzes text patterns (functions, brackets, etc.)     │
+│                          │                                       │
+│                          ▼                                       │
+│  5. Region Classification                                       │
+│     ├─► 🟢 Code regions (functions, commands)                  │
+│     └─► 🔵 Text regions (documentation, UI text)               │
+│                          │                                       │
+│                          ▼                                       │
+│  6. Output                                                      │
+│     └─► Array of regions with coordinates, text, and type      │
+│                                                                  │
+│  ✓ NO server communication                                      │
+│  ✓ NO data uploaded                                             │
+│  ✓ 100% private and secure                                      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🚀 Quick Start
