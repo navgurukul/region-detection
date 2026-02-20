@@ -35,3 +35,13 @@ export interface Settings {
   enableOCR: boolean;
   confidenceThreshold: number;
 }
+
+export interface LayoutRegion {
+  type: 'window' | 'panel' | 'region';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+  area: number;
+}

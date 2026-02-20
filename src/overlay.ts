@@ -1,5 +1,4 @@
 import type { Detection, Settings } from './types';
-import { CONFIG } from './config';
 
 export class OverlayRenderer {
   public canvas: HTMLCanvasElement;
@@ -98,7 +97,7 @@ export class OverlayRenderer {
   }
 
   private drawLabel(detection: Detection): void {
-    const { x, y, label, text, isCode, ocrConfidence } = detection;
+    const { x, y, label, text, isCode } = detection;
 
     // Prepare label text
     let labelText = label.toUpperCase();

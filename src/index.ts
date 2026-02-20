@@ -1,19 +1,3 @@
-/**
- * @navgurukul/screen-region-detector
- * 100% client-side screen region detection with Tesseract OCR
- * 
- * @example
- * ```typescript
- * import { HybridDetector } from '@navgurukul/screen-region-detector';
- * 
- * const detector = new HybridDetector();
- * await detector.initialize();
- * 
- * const regions = await detector.detectRegions(imageData);
- * console.log(regions);
- * ```
- */
-
 // Core detectors
 export { HybridDetector } from './hybridDetector';
 export { TesseractLayoutDetector } from './tesseractLayoutDetector';
@@ -38,3 +22,8 @@ export type { TesseractRegion } from './tesseractLayoutDetector';
 
 // Configuration
 export { CONFIG } from './config';
+
+// Note: detector.worker.ts and detectorClient.ts are not exported
+// as they are for the old YOLO-based detection system
+// Use HybridDetector for the current Tesseract-based system
+
