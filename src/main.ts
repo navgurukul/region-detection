@@ -1,14 +1,12 @@
 import { ScreenCapture } from './screenCapture';
-import { SmartLayoutDetector } from './smartLayoutDetector';
-import { OCRProcessor } from './ocrProcessor';
+import { HybridDetector } from './hybridDetector';
 import { OverlayRenderer } from './overlay';
 import { CONFIG } from './config';
 import type { Settings, Stats, Detection } from './types';
 
 class App {
   private screenCapture: ScreenCapture;
-  private layoutDetector: SmartLayoutDetector;
-  private ocrProcessor: OCRProcessor;
+  private detector: HybridDetector;
   private overlay: OverlayRenderer;
   private settings: Settings;
   private stats: Stats;
@@ -17,7 +15,6 @@ class App {
   private lastFrameTime = 0;
   private frameCount = 0;
   private fpsUpdateTime = 0;
-  private processedRegions = new Set<string>(); // Track which regions we've OCR'd
   private showBounds = true; // Toggle for showing bounds
 
   // DOM elements
@@ -57,8 +54,7 @@ class App {
 
     // Initialize components
     this.screenCapture = new ScreenCapture(this.videoElement);
-    this.layoutDetector = new SmartLayoutDetector();
-    this.ocrProcessor = new OCRProcessor();
+    this.detector = new HybridDetector();
     this.overlay = new OverlayRenderer(this.displayCanvas, this.settings);
 
     this.setupEventListeners();
@@ -115,10 +111,20 @@ class App {
   }
 
   private async initializeDetector(): Promise<void> {
-    // Layout detection doesn't need initialization
-    this.stats.modelLoaded = true;
-    this.updateStatsUI();
-    console.log('✓ Layout detector ready');
+    try {
+      this.loading.style.display = 'block';
+      this.loading.textContent = 'Initializing Tesseract OCR...';
+      
+      await this.detector.initialize();
+      
+      this.stats.modelLoaded = true;
+      this.loading.style.display = 'none';
+      this.updateStatsUI();
+      console.log('✓ Hybrid detector ready');
+    } catch (error) {
+      console.error('Failed to initialize:', error);
+      this.loading.textContent = 'Failed to initialize. Refresh to try again.';
+    }
   }
 
   private async start(): Promise<void> {
@@ -212,12 +218,12 @@ class App {
       // Get image data
       const imageData = tempCtx.getImageData(0, 0, width, height);
 
-      // Detect layout regions
-      const regions = this.layoutDetector.detectRegions(imageData);
+      // Detect regions using hybrid detector (Tesseract + edge detection)
+      const regions = await this.detector.detectRegions(imageData);
       
       // Convert to detection format
       const detections: Detection[] = regions.map(region => ({
-        label: region.type,
+        label: region.type + (region.isCode ? ' (code)' : region.text ? ` "${region.text.substring(0, 30)}..."` : ''),
         confidence: region.confidence,
         x: region.x,
         y: region.y,
@@ -256,7 +262,7 @@ class App {
     if (latencyElement) latencyElement.textContent = `${this.stats.latency.toFixed(0)}ms`;
     if (detectionsElement) detectionsElement.textContent = this.stats.detectionCount.toString();
     if (modelElement) {
-      modelElement.textContent = 'Layout Detection';
+      modelElement.textContent = 'Hybrid (Tesseract + Edge)';
     }
   }
 }
