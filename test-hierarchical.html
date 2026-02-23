@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Hierarchical OCR</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #252526;
+      border-left: 3px solid #007acc;
+      border-radius: 4px;
+    }
+    .success { color: #4ec9b0; }
+    .error { color: #f48771; }
+    .info { color: #9cdcfe; }
+    pre {
+      background: #1e1e1e;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+    #canvas {
+      border: 2px solid #007acc;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Hierarchical OCR Test Suite</h1>
+  
+  <div class="test-section">
+    <h2>Test Canvas</h2>
+    <canvas id="canvas" width="800" height="400"></canvas>
+    <div>
+      <button onclick="drawTestText()">Draw Test Text</button>
+      <button onclick="drawTestCode()">Draw Test Code</button>
+      <button onclick="drawMixedContent()">Draw Mixed Content</button>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Controls</h2>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="testBlocks()">Test Blocks</button>
+    <button onclick="testWords()">Test Words</button>
+    <button onclick="testLines()">Test Lines</button>
+    <button onclick="testSymbols()">Test Symbols</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script type="module">
+    import { HierarchicalOCRDetector } from './src/hierarchicalOCR.ts';
+
+    let detector = null;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const results = document.getElementById('results');
+
+    // Initialize detector
+    async function initDetector() {
+      if (detector) return;
+      
+      log('info', 'Initializing Tesseract OCR...');
+      detector = new HierarchicalOCRDetector();
+      await detector.initialize();
+      log('success', '✓ Detector initialized');
+    }
+
+    // Draw test content
+    window.drawTestText = function() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'black';
+      ctx.font = '24px Arial';
+      ctx.fillText('Hello World', 50, 50);
+      ctx.fillText('This is a test', 50, 100);
+      ctx.fillText('Multiple lines of text', 50, 150);
+      log('info', 'Drew test text');
+    };
+
+    window.drawTestCode = function() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'black';
+      ctx.font = '18px monospace';
+      ctx.fillText('function hello() {', 50, 50);
+      ctx.fillText('  console.log("test");', 50, 80);
+      ctx.fillText('  return true;', 50, 110);
+      ctx.fillText('}', 50, 140);
+      log('info', 'Drew test code');
+    };
+
+    window.drawMixedContent = function() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'black';
+      
+      // Title
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText('Documentation', 50, 50);
+      
+      // Text
+      ctx.font = '18px Arial';
+      ctx.fillText('This is a paragraph of text', 50, 100);
+      ctx.fillText('with multiple lines.', 50, 130);
+      
+      // Code
+      ctx.font = '16px monospace';
+      ctx.fillText('const x = 42;', 50, 180);
+      ctx.fillText('console.log(x);', 50, 210);
+      
+      log('info', 'Drew mixed content');
+    };
+
+    // Test functions
+    window.runAllTests = async function() {
+      results.innerHTML = '';
+      await initDetector();
+      
+      drawMixedContent();
+      await new Promise(r => setTimeout(r, 500));
+      
+      await testBlocks();
+      await testWords();
+      await testLines();
+      await testSymbols();
+      await testPerformance();
+    };
+
+    window.testBlocks = async function() {
+      await initDetector();
+      log('info', '--- Testing Block Detection ---');
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const blocks = await detector.detectLevel(imageData, 'block', {
+        minConfidence: 50,
+        detectCode: true,
+      });
+      
+      log('success', `✓ Found ${blocks.length} blocks`);
+      blocks.forEach((block, i) => {
+        const dims = detector.getBBoxDimensions(block.bbox);
+        log('info', `  Block ${i + 1}: "${block.text.substring(0, 50)}..."`);
+        log('info', `    Position: (${dims.x}, ${dims.y}), Size: ${dims.width}x${dims.height}`);
+        log('info', `    Is Code: ${block.isCode}, Confidence: ${block.confidence.toFixed(1)}%`);
+      });
+    };
+
+    window.testWords = async function() {
+      await initDetector();
+      log('info', '--- Testing Word Detection ---');
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const words = await detector.detectLevel(imageData, 'word', {
+        minConfidence: 50,
+      });
+      
+      log('success', `✓ Found ${words.length} words`);
+      words.slice(0, 10).forEach((word, i) => {
+        if ('is_bold' in word) {
+          log('info', `  Word ${i + 1}: "${word.text}" (${word.confidence.toFixed(1)}%)`);
+          if (word.is_bold || word.is_italic) {
+            log('info', `    Bold: ${word.is_bold}, Italic: ${word.is_italic}`);
+          }
+        }
+      });
+      if (words.length > 10) {
+        log('info', `  ... and ${words.length - 10} more words`);
+      }
+    };
+
+    window.testLines = async function() {
+      await initDetector();
+      log('info', '--- Testing Line Detection ---');
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const lines = await detector.detectLevel(imageData, 'line', {
+        minConfidence: 50,
+      });
+      
+      log('success', `✓ Found ${lines.length} lines`);
+      lines.forEach((line, i) => {
+        log('info', `  Line ${i + 1}: "${line.text}"`);
+      });
+      
+      // Calculate line spacing
+      if (lines.length > 1) {
+        const spacings = [];
+        for (let i = 1; i < lines.length; i++) {
+          const spacing = lines[i].bbox.y0 - lines[i-1].bbox.y1;
+          spacings.push(spacing);
+        }
+        const avgSpacing = spacings.reduce((a,b) => a+b, 0) / spacings.length;
+        log('info', `  Average line spacing: ${avgSpacing.toFixed(2)} pixels`);
+      }
+    };
+
+    window.testSymbols = async function() {
+      await initDetector();
+      log('info', '--- Testing Symbol Detection ---');
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const symbols = await detector.detectLevel(imageData, 'symbol', {
+        minConfidence: 50,
+      });
+      
+      log('success', `✓ Found ${symbols.length} symbols`);
+      
+      // Character distribution
+      const charTypes = {
+        letters: 0,
+        digits: 0,
+        spaces: 0,
+        punctuation: 0,
+        special: 0,
+      };
+      
+      symbols.forEach(symbol => {
+        const char = symbol.text;
+        if (/[a-zA-Z]/.test(char)) charTypes.letters++;
+        else if (/[0-9]/.test(char)) charTypes.digits++;
+        else if (/\s/.test(char)) charTypes.spaces++;
+        else if (/[.,!?;:]/.test(char)) charTypes.punctuation++;
+        else charTypes.special++;
+      });
+      
+      log('info', '  Character distribution:');
+      log('info', `    Letters: ${charTypes.letters}`);
+      log('info', `    Digits: ${charTypes.digits}`);
+      log('info', `    Spaces: ${charTypes.spaces}`);
+      log('info', `    Punctuation: ${charTypes.punctuation}`);
+      log('info', `    Special: ${charTypes.special}`);
+    };
+
+    async function testPerformance() {
+      log('info', '--- Testing Performance ---');
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      
+      // Test with all levels
+      const start1 = performance.now();
+      const result1 = await detector.detect(imageData, {
+        includeBlocks: true,
+        includeParagraphs: true,
+        includeLines: true,
+        includeWords: true,
+        includeSymbols: true,
+      });
+      const time1 = performance.now() - start1;
+      log('success', `✓ All levels: ${time1.toFixed(0)}ms`);
+      
+      // Test without symbols
+      detector.clearCache();
+      const start2 = performance.now();
+      const result2 = await detector.detect(imageData, {
+        includeBlocks: true,
+        includeLines: true,
+        includeWords: true,
+        includeSymbols: false,
+      });
+      const time2 = performance.now() - start2;
+      log('success', `✓ Without symbols: ${time2.toFixed(0)}ms (${((time1-time2)/time1*100).toFixed(1)}% faster)`);
+      
+      // Test blocks only
+      detector.clearCache();
+      const start3 = performance.now();
+      const result3 = await detector.detect(imageData, {
+        includeBlocks: true,
+        includeParagraphs: false,
+        includeLines: false,
+        includeWords: false,
+        includeSymbols: false,
+      });
+      const time3 = performance.now() - start3;
+      log('success', `✓ Blocks only: ${time3.toFixed(0)}ms (${((time1-time3)/time1*100).toFixed(1)}% faster)`);
+    }
+
+    function log(type, message) {
+      const div = document.createElement('div');
+      div.className = `test-section ${type}`;
+      div.textContent = message;
+      results.appendChild(div);
+      console.log(`[${type}]`, message);
+    }
+
+    // Auto-initialize on load
+    window.addEventListener('load', () => {
+      drawMixedContent();
+      log('info', 'Ready! Click "Run All Tests" to start.');
+    });
+
+    // Make functions globally available
+    window.initDetector = initDetector;
+    window.testPerformance = testPerformance;
+  </script>
+</body>
+</html>

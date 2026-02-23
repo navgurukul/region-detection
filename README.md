@@ -198,6 +198,9 @@ await detector.terminate();
 - ✅ **Privacy-focused** - All processing happens in browser
 - ✅ **Tesseract.js OCR** - Automatic text region detection
 - ✅ **Code detection** - Distinguishes code from regular text
+- ✅ **Hierarchical detection** - Blocks, paragraphs, lines, words, and characters
+- ✅ **Font analysis** - Detect bold, italic, underlined text
+- ✅ **Layout analysis** - Line spacing, text direction, alignment
 - ✅ **Real-time processing** - Optimized for 10 FPS
 - ✅ **TypeScript support** - Full type definitions included
 - ✅ **Zero dependencies** - Only Tesseract.js and ONNX Runtime
@@ -263,6 +266,80 @@ class OverlayRenderer {
   clear(): void
   updateSettings(settings: Settings): void
 }
+```
+
+### HierarchicalOCRDetector (NEW!)
+
+Advanced detector exposing all Tesseract detection levels: blocks, paragraphs, lines, words, and symbols.
+
+```typescript
+class HierarchicalOCRDetector {
+  // Initialize Tesseract
+  async initialize(): Promise<void>
+  
+  // Detect all hierarchical levels
+  async detect(
+    imageData: ImageData,
+    options?: DetectionOptions
+  ): Promise<HierarchicalOCRResult>
+  
+  // Detect specific level only
+  async detectLevel(
+    imageData: ImageData,
+    level: 'block' | 'paragraph' | 'line' | 'word' | 'symbol',
+    options?: DetectionOptions
+  ): Promise<Array<OCRBlock | OCRParagraph | OCRLine | OCRWord | OCRSymbol>>
+  
+  // Helper to get bbox dimensions
+  getBBoxDimensions(bbox: BoundingBox): { x, y, width, height }
+  
+  // Clear cache and force new detection
+  clearCache(): void
+  
+  // Clean up
+  async terminate(): Promise<void>
+}
+```
+
+**Quick Example:**
+
+```typescript
+import { HierarchicalOCRDetector } from '@navgurukul/screen-region-detector';
+
+const detector = new HierarchicalOCRDetector();
+await detector.initialize();
+
+// Detect all levels
+const result = await detector.detect(imageData);
+console.log('Blocks:', result.blocks.length);
+console.log('Words:', result.words.length);
+console.log('Full text:', result.fullText);
+
+// Detect only words
+const words = await detector.detectLevel(imageData, 'word');
+words.forEach(word => {
+  console.log(`"${word.text}" - Bold: ${word.is_bold}, Italic: ${word.is_italic}`);
+});
+
+// Detect only code blocks
+const result = await detector.detect(imageData, {
+  includeBlocks: true,
+  includeWords: false,
+  includeSymbols: false,
+  detectCode: true,
+});
+const codeBlocks = result.blocks.filter(b => b.isCode);
+```
+
+**Detection Levels:**
+
+- **Blocks** - Largest text regions (sections, paragraphs)
+- **Paragraphs** - Groups of related lines
+- **Lines** - Individual text lines
+- **Words** - Individual words with font info (bold, italic, size)
+- **Symbols** - Individual characters with alternatives
+
+**See [docs/HIERARCHICAL-OCR.md](./docs/HIERARCHICAL-OCR.md) for complete guide.**
 ```
 
 ## 🎨 Complete Example

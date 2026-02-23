@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screen Region Detector - Demos</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .demos {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .demo-card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .demo-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    }
+
+    .demo-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .demo-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .demo-description {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .demo-features {
+      list-style: none;
+      margin-top: 15px;
+    }
+
+    .demo-features li {
+      padding: 5px 0;
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    .demo-features li:before {
+      content: "✓ ";
+      color: #4CAF50;
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .badge.new {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .badge.classic {
+      background: #2196F3;
+      color: white;
+    }
+
+    .footer {
+      text-align: center;
+      color: white;
+      margin-top: 40px;
+      opacity: 0.8;
+    }
+
+    .footer a {
+      color: white;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 Screen Region Detector</h1>
+      <p class="subtitle">Choose a demo to get started</p>
+    </div>
+
+    <div class="demos">
+      <a href="/index.html" class="demo-card">
+        <div class="demo-icon">🖥️</div>
+        <div class="demo-title">Basic Detection</div>
+        <span class="badge classic">CLASSIC</span>
+        <p class="demo-description">
+          Real-time screen region detection with automatic text and code identification.
+        </p>
+        <ul class="demo-features">
+          <li>Block-level detection</li>
+          <li>Code vs text classification</li>
+          <li>Real-time processing</li>
+          <li>Visual overlay</li>
+        </ul>
+      </a>
+
+      <a href="/hierarchical-demo.html" class="demo-card">
+        <div class="demo-icon">🔍</div>
+        <div class="demo-title">Hierarchical OCR</div>
+        <span class="badge new">NEW!</span>
+        <p class="demo-description">
+          Advanced multi-level text detection: blocks, paragraphs, lines, words, and characters.
+        </p>
+        <ul class="demo-features">
+          <li>5 detection levels</li>
+          <li>Font analysis (bold, italic)</li>
+          <li>Character-level detection</li>
+          <li>Layout analysis</li>
+        </ul>
+      </a>
+    </div>
+
+    <div class="footer">
+      <p>
+        📚 <a href="https://github.com/navgurukul/region-detection" target="_blank">Documentation</a> | 
+        💻 <a href="https://github.com/navgurukul/region-detection" target="_blank">GitHub</a> | 
+        📦 <a href="https://www.npmjs.com/package/@navgurukul/screen-region-detector" target="_blank">NPM</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
