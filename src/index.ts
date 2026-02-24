@@ -4,6 +4,8 @@ export { TesseractLayoutDetector } from './tesseractLayoutDetector';
 export { SmartLayoutDetector } from './smartLayoutDetector';
 export { SimpleLayoutDetector } from './simpleLayoutDetector';
 export { HierarchicalOCRDetector } from './hierarchicalOCR';
+export { EnhancedCodeDetector } from './enhancedCodeDetector';
+export { ContentClassifier } from './contentClassifier';
 
 // Utilities
 export { ScreenCapture } from './screenCapture';
@@ -30,6 +32,8 @@ export type {
 
 export type { HybridRegion } from './hybridDetector';
 export type { TesseractRegion } from './tesseractLayoutDetector';
+export type { CodeDetectionResult, DetectionOptions as CodeDetectionOptions } from './enhancedCodeDetector';
+export type { ContentType, ContentClassificationResult } from './contentClassifier';
 
 // Configuration
 export { CONFIG } from './config';

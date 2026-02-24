@@ -4,6 +4,8 @@
  */
 
 import Tesseract, { createWorker } from 'tesseract.js';
+import { EnhancedCodeDetector } from './enhancedCodeDetector';
+import { ContentClassifier } from './contentClassifier';
 
 export interface HybridRegion {
   type: 'window' | 'text' | 'code' | 'ui';
@@ -14,6 +16,8 @@ export interface HybridRegion {
   confidence: number;
   text?: string;
   isCode?: boolean;
+  contentType?: string;  // NEW: Semantic content type
+  contentSubtype?: string;  // NEW: Content subtype
 }
 
 export class HybridDetector {
@@ -23,6 +27,13 @@ export class HybridDetector {
   private lastProcessTime = 0;
   private processingInterval = 3000; // Process with Tesseract every 3 seconds
   private isProcessing = false;
+  private codeDetector: EnhancedCodeDetector;
+  private contentClassifier: ContentClassifier;
+
+  constructor() {
+    this.codeDetector = new EnhancedCodeDetector();
+    this.contentClassifier = new ContentClassifier();
+  }
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -180,17 +191,23 @@ export class HybridDetector {
           const text = block.text.trim();
           if (!text) continue;
           
-          const isCode = this.isCodeBlock(text);
+          // Use enhanced code detector
+          const codeResult = await this.codeDetector.detect(text);
+          
+          // Use content classifier for semantic understanding
+          const contentResult = this.contentClassifier.classify(text);
 
           regions.push({
-            type: isCode ? 'code' : 'text',
+            type: codeResult.isCode ? 'code' : 'text',
             x: x0 * scaleX,
             y: y0 * scaleY,
             width: blockWidth,
             height: blockHeight,
-            confidence: block.confidence / 100,
+            confidence: (block.confidence / 100) * codeResult.confidence,
             text,
-            isCode,
+            isCode: codeResult.isCode,
+            contentType: contentResult.type,
+            contentSubtype: contentResult.subtype,
           });
         }
       }
@@ -251,37 +268,12 @@ export class HybridDetector {
   }
 
   /**
-   * Detect if text block contains code
+   * Detect if text block contains code (legacy method, now uses EnhancedCodeDetector)
+   * @deprecated Use codeDetector.detect() instead
    */
-  private isCodeBlock(text: string): boolean {
-    if (!text || text.length < 10) return false;
-
-    // Code patterns
-    const codePatterns = [
-      /function\s+\w+/,
-      /const\s+\w+\s*=/,
-      /let\s+\w+\s*=/,
-      /var\s+\w+\s*=/,
-      /class\s+\w+/,
-      /import\s+.*from/,
-      /export\s+(default|const)/,
-      /if\s*\(/,
-      /for\s*\(/,
-      /while\s*\(/,
-      /=>/,
-      /console\./,
-      /\w+\.\w+\(/,
-    ];
-
-    for (const pattern of codePatterns) {
-      if (pattern.test(text)) return true;
-    }
-
-    // Check special character density
-    const specialChars = text.match(/[{}()\[\];:=<>]/g);
-    const ratio = specialChars ? specialChars.length / text.length : 0;
-    
-    return ratio > 0.12;
+  private async isCodeBlock(text: string): Promise<boolean> {
+    const result = await this.codeDetector.detect(text);
+    return result.isCode;
   }
 
   async terminate(): Promise<void> {

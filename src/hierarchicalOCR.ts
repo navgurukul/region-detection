@@ -4,6 +4,7 @@
  */
 
 import Tesseract, { createWorker, RecognizeResult } from 'tesseract.js';
+import { EnhancedCodeDetector } from './enhancedCodeDetector';
 import type {
   HierarchicalOCRResult,
   OCRBlock,
@@ -22,6 +23,11 @@ export class HierarchicalOCRDetector {
   private lastProcessTime = 0;
   private processingInterval = 3000; // Process every 3 seconds
   private isProcessing = false;
+  private codeDetector: EnhancedCodeDetector;
+
+  constructor() {
+    this.codeDetector = new EnhancedCodeDetector();
+  }
 
   async initialize(): Promise<void> {
     if (this.isInitialized) {
@@ -307,35 +313,12 @@ export class HierarchicalOCRDetector {
   }
 
   /**
-   * Detect if text block contains code
+   * Detect if text block contains code using enhanced detector
    */
-  private isCodeBlock(text: string): boolean {
+  private async isCodeBlock(text: string): Promise<boolean> {
     if (!text || text.length < 10) return false;
-
-    const codePatterns = [
-      /function\s+\w+/,
-      /const\s+\w+\s*=/,
-      /let\s+\w+\s*=/,
-      /var\s+\w+\s*=/,
-      /class\s+\w+/,
-      /import\s+.*from/,
-      /export\s+(default|const)/,
-      /if\s*\(/,
-      /for\s*\(/,
-      /while\s*\(/,
-      /=>/,
-      /console\./,
-      /\w+\.\w+\(/,
-    ];
-
-    for (const pattern of codePatterns) {
-      if (pattern.test(text)) return true;
-    }
-
-    const specialChars = text.match(/[{}()\[\];:=<>]/g);
-    const ratio = specialChars ? specialChars.length / text.length : 0;
-    
-    return ratio > 0.12;
+    const result = await this.codeDetector.detect(text);
+    return result.isCode;
   }
 
   /**
